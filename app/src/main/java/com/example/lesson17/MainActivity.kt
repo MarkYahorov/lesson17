@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
             openSecondThread()
             openFirstThread()
             openThirdThread()
+            openFourthThread()
         }
     }
 
@@ -68,18 +69,12 @@ class MainActivity : AppCompatActivity() {
                         stringBuilder.append(it)
                         Log.d("koy", "first $it")
                     }
-                    Thread.sleep(200)
+                    Thread.sleep(100)
                 }
-                handler.postDelayed(object : Runnable {
-                    override fun run() {
-                        thisText.text = stringBuilder.toString()
-                    }
-
-                }, 100)
+                handler.post{thisText.append(stringBuilder)}
             }
         }
         firstThread.start()
-
     }
 
     private fun openSecondThread() {
@@ -88,7 +83,7 @@ class MainActivity : AppCompatActivity() {
                 for (i in 0..20) {
                     appendMessage("$i")
                     Log.d("koy", "second $i")
-                    Thread.sleep(500)
+                    Thread.sleep(200)
                 }
             }
         }
@@ -100,7 +95,10 @@ class MainActivity : AppCompatActivity() {
             var count = 0
             while (count < 10 || count == 10) {
                 if (count < 10) {
-                    appendMessage("${count++}")
+                    appendMessage("ФЫВФЫВ${count++}")
+                    synchronized(lock){
+                        lock.notify()
+                    }
                     Thread.sleep(500)
                 } else {
                     appendMessage("${count++}")
@@ -109,6 +107,11 @@ class MainActivity : AppCompatActivity() {
                     Log.d("key", "Поток1 завершил работу ")
                     secondThread.join()
                     Log.d("key", "Поток2 завершил работу ")
+                    synchronized(lock){
+                        lock.notify()
+                    }
+                    fourthThread.join()
+                    Log.d("key", "Поток4 завершил работу ")
                     handler.post(object : Runnable {
                         override fun run() {
                             startBtn.isEnabled = true
@@ -123,9 +126,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun openFourthThread() {
         fourthThread = Thread{
-            appendMessage("YOP!")
-            lock.wait()
+            while (isRunning){
+                synchronized(lock){
+                    lock.wait()
+                    if (isRunning){
+                        appendMessage("YOP")
+                    }
+                }
+
+            }
         }
+        fourthThread.start()
     }
 
     private fun appendMessage(message: String) {
