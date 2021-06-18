@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     Thread.sleep(100)
                 }
-                handler.post{thisText.append(stringBuilder)}
+                handler.post { thisText.append(stringBuilder) }
             }
         }
         firstThread.start()
@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             while (count < 10 || count == 10) {
                 if (count < 10) {
                     appendMessage("ФЫВФЫВ${count++}")
-                    synchronized(lock){
+                    synchronized(lock) {
                         lock.notify()
                     }
                     Thread.sleep(500)
@@ -107,7 +107,7 @@ class MainActivity : AppCompatActivity() {
                     Log.d("key", "Поток1 завершил работу ")
                     secondThread.join()
                     Log.d("key", "Поток2 завершил работу ")
-                    synchronized(lock){
+                    synchronized(lock) {
                         lock.notify()
                     }
                     fourthThread.join()
@@ -125,11 +125,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openFourthThread() {
-        fourthThread = Thread{
-            while (isRunning){
-                synchronized(lock){
+        fourthThread = Thread {
+            while (isRunning) {
+                synchronized(lock) {
                     lock.wait()
-                    if (isRunning){
+                    if (isRunning) {
                         appendMessage("YOP")
                     }
                 }
