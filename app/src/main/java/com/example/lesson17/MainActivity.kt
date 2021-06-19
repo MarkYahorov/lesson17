@@ -20,7 +20,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var secondThread: Thread
     private lateinit var thirdThread: Thread
     private lateinit var fourthThread: Thread
-    private lateinit var fiveThread: Thread
 
     private val handler = Handler(Looper.getMainLooper())
     private val stringBuilder = StringBuilder()
@@ -62,11 +61,12 @@ class MainActivity : AppCompatActivity() {
     private fun openFirstThread() {
         firstThread = Thread {
             while (isRunning) {
-                handler.post {
+                synchronized(lock) {
                     messageList.forEach {
-                        thisText.append(it)
+                        stringBuilder.append(it)
                     }
                 }
+                handler.post { thisText.append(stringBuilder) }
                 Thread.sleep(100)
             }
         }
@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openSecondThread() {
         secondThread = Thread {
-            var nextPrimeNumber = 0
+            var nextPrimeNumber = 2
             while (isRunning) {
                 var dividerCount = 0
                 for (i in nextPrimeNumber..400) {
@@ -85,12 +85,13 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (dividerCount < 2) {
                     synchronized(lock) {
-                        addMessageToList("$dividerCount")
+                        addMessageToList("SECOND THREAD $nextPrimeNumber")
+                        Log.d("key", "$nextPrimeNumber")
                         lock.notify()
                     }
                 }
                 nextPrimeNumber++
-                Thread.sleep(400)
+                Thread.sleep(200)
             }
         }
         secondThread.start()
@@ -104,7 +105,7 @@ class MainActivity : AppCompatActivity() {
                     addMessageToList("ФЫВФЫВ${count++}")
                     Thread.sleep(500)
                 } else {
-                    addMessageToList("${count++}")
+                    addMessageToList("asd${count++}")
                     isRunning = false
                     firstThread.join()
                     Log.d("key", "Поток1 завершил работу ")
