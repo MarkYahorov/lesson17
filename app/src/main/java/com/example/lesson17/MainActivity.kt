@@ -65,6 +65,7 @@ class MainActivity : AppCompatActivity() {
                     messageList.forEach {
                         stringBuilder.append(it)
                     }
+                    messageList.clear()
                 }
                 handler.post { thisText.append(stringBuilder) }
                 Thread.sleep(100)
@@ -91,7 +92,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 nextPrimeNumber++
-                Thread.sleep(200)
+                Thread.sleep(400)
             }
         }
         secondThread.start()
@@ -103,7 +104,7 @@ class MainActivity : AppCompatActivity() {
             while (count < 10 || count == 10) {
                 if (count < 10) {
                     addMessageToList("ФЫВФЫВ${count++}")
-                    Thread.sleep(500)
+                    Thread.sleep(5000)
                 } else {
                     addMessageToList("asd${count++}")
                     isRunning = false
