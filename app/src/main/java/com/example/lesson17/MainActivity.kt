@@ -6,14 +6,12 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.lang.StringBuilder
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    val lock = Object()
+    private val lock = Object()
 
     private lateinit var thisText: TextView
     private lateinit var startBtn: Button
@@ -28,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     private val stringBuilder = StringBuilder()
 
     @Volatile
-    private var intList = mutableListOf<String>()
+    private var messageList = mutableListOf<String>()
 
     @Volatile
     var isRunning = false
@@ -64,14 +62,12 @@ class MainActivity : AppCompatActivity() {
     private fun openFirstThread() {
         firstThread = Thread {
             while (isRunning) {
-                synchronized(lock) {
-                    intList.forEach {
-                        stringBuilder.append(it)
-                        Log.d("koy", "first $it")
+                handler.post {
+                    messageList.forEach {
+                        thisText.append(it)
                     }
-                    Thread.sleep(100)
                 }
-                handler.post { thisText.append(stringBuilder) }
+                Thread.sleep(100)
             }
         }
         firstThread.start()
@@ -79,12 +75,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun openSecondThread() {
         secondThread = Thread {
+            var nextPrimeNumber = 0
             while (isRunning) {
-                for (i in 0..20) {
-                    appendMessage("$i")
-                    Log.d("koy", "second $i")
-                    Thread.sleep(200)
+                var dividerCount = 0
+                for (i in nextPrimeNumber..400) {
+                    if (nextPrimeNumber % i == 0) {
+                        dividerCount++
+                    }
                 }
+                if (dividerCount < 2) {
+                    synchronized(lock) {
+                        addMessageToList("$dividerCount")
+                        lock.notify()
+                    }
+                }
+                nextPrimeNumber++
+                Thread.sleep(400)
             }
         }
         secondThread.start()
@@ -95,13 +101,10 @@ class MainActivity : AppCompatActivity() {
             var count = 0
             while (count < 10 || count == 10) {
                 if (count < 10) {
-                    appendMessage("ФЫВФЫВ${count++}")
-                    synchronized(lock) {
-                        lock.notify()
-                    }
+                    addMessageToList("ФЫВФЫВ${count++}")
                     Thread.sleep(500)
                 } else {
-                    appendMessage("${count++}")
+                    addMessageToList("${count++}")
                     isRunning = false
                     firstThread.join()
                     Log.d("key", "Поток1 завершил работу ")
@@ -112,12 +115,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     fourthThread.join()
                     Log.d("key", "Поток4 завершил работу ")
-                    handler.post(object : Runnable {
-                        override fun run() {
-                            startBtn.isEnabled = true
-                        }
-                    }
-                    )
+                    handler.post { startBtn.isEnabled = true }
                 }
             }
         }
@@ -126,12 +124,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun openFourthThread() {
         fourthThread = Thread {
-            while (isRunning) {
-                synchronized(lock) {
+            synchronized(lock) {
+                while (isRunning) {
                     lock.wait()
-                    if (isRunning) {
-                        appendMessage("YOP")
-                    }
+                    addMessageToList("YOP")
                 }
 
             }
@@ -139,9 +135,9 @@ class MainActivity : AppCompatActivity() {
         fourthThread.start()
     }
 
-    private fun appendMessage(message: String) {
+    private fun addMessageToList(message: String) {
         synchronized(lock) {
-            intList.add(message)
+            messageList.add(message)
         }
     }
 
