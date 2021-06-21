@@ -3,17 +3,16 @@ package com.example.lesson17
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.lang.StringBuilder
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    val lock = Object()
+    private val lock = Object()
 
     private lateinit var thisText: TextView
     private lateinit var startBtn: Button
@@ -22,13 +21,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var secondThread: Thread
     private lateinit var thirdThread: Thread
     private lateinit var fourthThread: Thread
-    private lateinit var fiveThread: Thread
 
     private val handler = Handler(Looper.getMainLooper())
     private val stringBuilder = StringBuilder()
 
     @Volatile
-    private var intList = mutableListOf<String>()
+    private var messageList = mutableListOf<String>()
 
     @Volatile
     var isRunning = false
@@ -48,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         setListener()
+        thisText.movementMethod = ScrollingMovementMethod()
     }
 
     private fun setListener() {
@@ -57,6 +56,7 @@ class MainActivity : AppCompatActivity() {
             openSecondThread()
             openFirstThread()
             openThirdThread()
+            openFourthThread()
         }
     }
 
@@ -64,32 +64,38 @@ class MainActivity : AppCompatActivity() {
         firstThread = Thread {
             while (isRunning) {
                 synchronized(lock) {
-                    intList.forEach {
+                    messageList.forEach {
                         stringBuilder.append(it)
-                        Log.d("koy", "first $it")
                     }
-                    Thread.sleep(200)
+                    messageList.clear()
                 }
-                handler.postDelayed(object : Runnable {
-                    override fun run() {
-                        thisText.text = stringBuilder.toString()
-                    }
-
-                }, 100)
+                handler.post { thisText.append(stringBuilder)
+                    stringBuilder.clear()}
+                Thread.sleep(100)
             }
         }
         firstThread.start()
-
     }
 
     private fun openSecondThread() {
         secondThread = Thread {
+            var nextPrimeNumber = 2
             while (isRunning) {
-                for (i in 0..20) {
-                    appendMessage("$i")
-                    Log.d("koy", "second $i")
-                    Thread.sleep(500)
+                var dividerCount = 0
+                for (i in nextPrimeNumber..400) {
+                    if (nextPrimeNumber % i == 0) {
+                        dividerCount++
+                    }
                 }
+                if (dividerCount < 2) {
+                    synchronized(lock) {
+                        addMessageToList("SECOND THREAD $nextPrimeNumber")
+                        Log.d("key", "$nextPrimeNumber")
+                        lock.notify()
+                    }
+                }
+                nextPrimeNumber++
+                Thread.sleep(400)
             }
         }
         secondThread.start()
@@ -100,21 +106,21 @@ class MainActivity : AppCompatActivity() {
             var count = 0
             while (count < 10 || count == 10) {
                 if (count < 10) {
-                    appendMessage("${count++}")
-                    Thread.sleep(500)
+                    addMessageToList("ФЫВФЫВ${count++}")
+                    Thread.sleep(5000)
                 } else {
-                    appendMessage("${count++}")
+                    addMessageToList("asd${count++}")
                     isRunning = false
                     firstThread.join()
                     Log.d("key", "Поток1 завершил работу ")
                     secondThread.join()
                     Log.d("key", "Поток2 завершил работу ")
-                    handler.post(object : Runnable {
-                        override fun run() {
-                            startBtn.isEnabled = true
-                        }
+                    synchronized(lock) {
+                        lock.notify()
                     }
-                    )
+                    fourthThread.join()
+                    Log.d("key", "Поток4 завершил работу ")
+                    handler.post { startBtn.isEnabled = true }
                 }
             }
         }
@@ -122,15 +128,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openFourthThread() {
-        fourthThread = Thread{
-            appendMessage("YOP!")
-            lock.wait()
+        fourthThread = Thread {
+            synchronized(lock) {
+                while (isRunning) {
+                    lock.wait()
+                    addMessageToList("YOP")
+                }
+
+            }
         }
+        fourthThread.start()
     }
 
-    private fun appendMessage(message: String) {
+    private fun addMessageToList(message: String) {
         synchronized(lock) {
-            intList.add(message)
+            messageList.add(message)
         }
     }
 
