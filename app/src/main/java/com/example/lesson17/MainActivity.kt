@@ -3,6 +3,7 @@ package com.example.lesson17
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         setListener()
+        thisText.movementMethod = ScrollingMovementMethod()
     }
 
     private fun setListener() {
@@ -67,7 +69,8 @@ class MainActivity : AppCompatActivity() {
                     }
                     messageList.clear()
                 }
-                handler.post { thisText.append(stringBuilder) }
+                handler.post { thisText.append(stringBuilder)
+                    stringBuilder.clear()}
                 Thread.sleep(100)
             }
         }
